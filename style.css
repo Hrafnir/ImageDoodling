@@ -1,0 +1,163 @@
+/* Version: #9 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #e0e0e0;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Hindrer dobbel scrollbar på selve siden */
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+/* --- Verktøylinje --- */
+.toolbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #cccccc;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    z-index: 10;
+    flex-shrink: 0; /* Sørger for at toolbar ikke krymper */
+}
+
+.tool-section {
+    display: flex;
+    gap: 5px;
+    padding-right: 15px;
+    border-right: 1px solid #eeeeee;
+    align-items: center;
+}
+
+.tool-section:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+/* Knapper */
+button {
+    padding: 8px 12px;
+    border: 1px solid #cccccc;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+button:hover {
+    background-color: #eeeeee;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+/* Lagre-knapp fremheving */
+.primary-action {
+    background-color: #28a745;
+    color: white;
+    border-color: #1e7e34;
+    font-weight: bold;
+}
+
+.primary-action:hover {
+    background-color: #218838;
+}
+
+/* Inputs og Labels */
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+input[type="color"] {
+    border: none;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    padding: 0;
+    background: none;
+}
+
+input[type="number"] {
+    width: 50px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+}
+
+.checkbox-group label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Statusbar / Info */
+.status-bar {
+    background-color: #f1f1f1;
+    text-align: center;
+    padding: 5px;
+    font-size: 13px;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+/* --- Canvas Område --- */
+#canvas-wrapper {
+    flex-grow: 1;
+    background-color: #ffffff;
+    position: relative;
+    overflow: auto; /* Lar oss scrolle hvis bildet er større enn skjermen */
+    
+    /* Sjakkbrett-mønster (Checkerboard) for å vise transparens */
+    background-image: 
+        linear-gradient(45deg, #cccccc 25%, transparent 25%), 
+        linear-gradient(-45deg, #cccccc 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #cccccc 75%), 
+        linear-gradient(-45deg, transparent 75%, #cccccc 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    
+    /* Sentrerer canvas visuelt hvis det er mindre enn vinduet */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Selve canvas-elementet (styres mest av JS, men skygge hjelper) */
+.canvas-container {
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    background-color: transparent; /* Viktig at denne er transparent */
+}
+/* Version: #9 */
