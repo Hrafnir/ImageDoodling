@@ -1,0 +1,74 @@
+<!-- Version: #8 -->
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TegneApp med Skravering</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Laster inn Fabric.js biblioteket -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Verktøylinje -->
+        <div class="toolbar">
+            
+            <!-- Tegneverktøy -->
+            <div class="tool-section">
+                <button id="btn-select" class="tool-btn active" title="Velg og flytt objekter">Velg</button>
+                <button id="btn-free" class="tool-btn" title="Frihåndstegning">Frihånd</button>
+                <button id="btn-line" class="tool-btn" title="Rett strek">Strek</button>
+                <button id="btn-arrow" class="tool-btn" title="Pil">Pil</button>
+                <button id="btn-rect" class="tool-btn" title="Firkant">Firkant</button>
+                <button id="btn-poly" class="tool-btn" title="Mangekant (Klikk punkter, dobbelklikk for å avslutte)">Mangekant</button>
+            </div>
+
+            <!-- Egenskaper for strek -->
+            <div class="tool-section">
+                <div class="input-group">
+                    <label for="strokeColor">Strek:</label>
+                    <input type="color" id="strokeColor" value="#ff0000">
+                </div>
+                <div class="input-group">
+                    <label for="strokeWidth">Tykkelse:</label>
+                    <input type="number" id="strokeWidth" value="3" min="1" max="50">
+                </div>
+            </div>
+
+            <!-- Egenskaper for fyll -->
+            <div class="tool-section">
+                <div class="input-group">
+                    <label for="fillColor">Fyll:</label>
+                    <input type="color" id="fillColor" value="#00ff00">
+                </div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="useHatch"> Skravering</label>
+                    <label><input type="checkbox" id="transparentFill" checked> Ingen fyll</label>
+                </div>
+            </div>
+
+            <!-- Handlinger -->
+            <div class="tool-section action-section">
+                <button id="btn-delete" title="Slett valgt objekt (Delete-tast)">Slett</button>
+                <button id="btn-clear" title="Fjern alt">Nullstill</button>
+                <button id="btn-save" class="primary-action">Lagre PNG</button>
+            </div>
+        </div>
+
+        <!-- Informasjonstekst -->
+        <div class="status-bar">
+            <span id="status-text">Klikk på det rutete feltet og trykk <strong>CTRL+V</strong> for å lime inn bilde.</span>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="canvas-wrapper">
+            <canvas id="c"></canvas>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<!-- Version: #8 -->
