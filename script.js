@@ -1,5 +1,5 @@
-/* Version: #17 */
-console.log("[App] Laster script v#17...");
+/* Version: #19 */
+console.log("[App] Laster script v#19 - Auto-Edit Polygon...");
 
 // === GLOBALE VARIABLER ===
 const canvas = new fabric.Canvas('c', {
@@ -8,7 +8,8 @@ const canvas = new fabric.Canvas('c', {
     backgroundColor: null,
     selection: true,
     fireRightClick: true,
-    stopContextMenu: true
+    stopContextMenu: true,
+    preserveObjectStacking: true // Hjelper med å holde kontroller på topp
 });
 
 // Tilstander
@@ -24,10 +25,8 @@ let polyHelpers = [];
 let polyActiveLine = null;
 
 // Polygon variabler (Redigering)
-let isEditingPoly = false;
-let editPolyTarget = null;
-let editPolyControls = [];
-let editPolyLines = [];
+let editPolyTarget = null;     // Polygonet som redigeres
+let editControlsGroup = [];    // Array med sirkler og linjer
 
 // Referanser til DOM
 const ui = {
@@ -70,11 +69,15 @@ canvas.on('mouse:wheel', function(opt) {
     opt.e.preventDefault();
     opt.e.stopPropagation();
     ui.status.innerHTML = `Zoom: ${Math.round(zoom * 100)}%`;
+    
+    // Oppdater kontrollstørrelse ved zoom slik at de ikke blir enorme/mikroskopiske
+    updateControlSizes();
 });
 
 ui.btns.resetZoom.onclick = function() {
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     ui.status.innerHTML = "Zoom: 100%";
+    updateControlSizes();
 };
 
 canvas.on('mouse:down', function(opt) {
@@ -135,15 +138,33 @@ function getCurrentFill() {
     return 'transparent';
 }
 
+function updateControlSizes() {
+    // Holder sirklene i konstant visuell størrelse uavhengig av zoom
+    const zoom = canvas.getZoom();
+    const radius = 6 / zoom;
+    const strokeWidth = 2 / zoom;
+    
+    editControlsGroup.forEach(obj => {
+        if (obj.type === 'circle') {
+            obj.set({ radius: radius, strokeWidth: 1/zoom });
+        } else if (obj.type === 'line') {
+            obj.set({ strokeWidth: strokeWidth });
+        }
+    });
+    canvas.requestRenderAll();
+}
+
 // === MODUS STYRING ===
 
 function setMode(mode) {
     if (currentMode === mode && mode !== 'polygon') return;
     
-    // Avslutt redigering hvis vi bytter verktøy
-    if (isEditingPoly) finishPolyEdit();
+    // Rydd opp polygon redigering hvis vi forlater select mode
+    if (mode !== 'select') {
+        clearEditControls();
+    }
 
-    // Avbryt påbegynt tegning
+    // Avbryt tegning
     if (currentMode === 'polygon' && mode !== 'polygon') {
         abortPolygonDrawing();
     }
@@ -167,6 +188,8 @@ function setMode(mode) {
         setStatus("Mangekant: Klikk for punkter. Klikk på startpunktet for å lukke.");
         polyPoints = [];
         clearPolyHelpers();
+    } else if (mode === 'select') {
+        setStatus("Velg: Klikk på objekter for å flytte. Klikk på mangekant for å redigere punkter.");
     } else {
         setStatus(`Verktøy: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
     }
@@ -179,6 +202,28 @@ ui.btns.line.onclick = () => setMode('line');
 ui.btns.arrow.onclick = () => setMode('arrow');
 ui.btns.rect.onclick = () => setMode('rect');
 ui.btns.poly.onclick = () => setMode('polygon');
+
+// === SELECTION EVENTS (AUTO-EDIT) ===
+
+canvas.on('selection:created', handleSelection);
+canvas.on('selection:updated', handleSelection);
+canvas.on('selection:cleared', function() {
+    clearEditControls();
+});
+
+function handleSelection(e) {
+    const active = e.selected[0];
+    
+    // Hvis vi velger noe annet, fjern gamle kontroller
+    if (editPolyTarget && active !== editPolyTarget) {
+        clearEditControls();
+    }
+
+    // Hvis vi er i select mode og velger en polygon -> Vis kontroller
+    if (currentMode === 'select' && active && active.type === 'polygon') {
+        showEditControls(active);
+    }
+}
 
 // === TEGNING (Mouse Events) ===
 
@@ -193,13 +238,16 @@ canvas.on('mouse:down', function(o) {
     }
     hideContextMenu();
 
-    if (isDraggingCanvas || isEditingPoly) return;
+    if (isDraggingCanvas) return;
 
     // 2. Polygon tegning
     if (currentMode === 'polygon') {
         handlePolyClick(o);
         return;
     }
+
+    // Hvis vi klikker på en kontroll (rød sirkel/blå linje), la Fabric håndtere det (det er selectable)
+    if (o.target && (o.target.isControlPoint || o.target.isControlLine)) return;
 
     if (currentMode === 'select' || currentMode === 'free') return;
 
@@ -237,7 +285,7 @@ canvas.on('mouse:down', function(o) {
 canvas.on('mouse:move', function(o) {
     const pointer = canvas.getPointer(o.e);
 
-    // Oppdater elastisk linje for polygon
+    // Polygon elastisk linje
     if (currentMode === 'polygon' && polyActiveLine) {
         if (polyPoints.length > 2) {
             const start = polyPoints[0];
@@ -281,20 +329,6 @@ canvas.on('mouse:up', function() {
     activeShape = null;
 });
 
-// Dobbeltklikk håndtering (Både for å lukke polygon under tegning, og redigere eksisterende)
-canvas.on('mouse:dblclick', function(o) {
-    // Hvis vi tegner polygon: Avslutt tegning (hvis nok punkter)
-    if (currentMode === 'polygon') {
-        // Denne håndteres primært av "klikk på startpunkt", men vi kan ha den her også
-        return; 
-    }
-    
-    // Hvis vi er i select mode og dobbeltklikker på en polygon: Start redigering
-    if (currentMode === 'select' && o.target && o.target.type === 'polygon') {
-        startPolyEdit(o.target);
-    }
-});
-
 function createArrow(lineObj) {
     const width = lineObj.strokeWidth;
     const color = lineObj.stroke;
@@ -323,12 +357,11 @@ function createArrow(lineObj) {
     canvas.renderAll();
 }
 
-// === POLYGON TEGNING LOGIKK ===
+// === POLYGON TEGNING ===
 
 function handlePolyClick(o) {
     const pointer = canvas.getPointer(o.e);
     
-    // Sjekk om vi lukker polygonet
     if (polyPoints.length > 2) {
         const start = polyPoints[0];
         const dist = Math.hypot(pointer.x - start.x, pointer.y - start.y);
@@ -379,6 +412,7 @@ function finishPolygon() {
         objectCaching: false
     });
     canvas.add(polygon);
+    canvas.setActiveObject(polygon); // Auto-velg den nye figuren
     canvas.renderAll();
     polyPoints = [];
     setMode('select');
@@ -398,136 +432,185 @@ function clearPolyHelpers() {
     }
 }
 
-// === POLYGON REDIGERING (AVANSERT) ===
+// === AUTO-EDIT POLYGON LOGIKK ===
 
-function startPolyEdit(poly) {
-    if (isEditingPoly) return; // Allerede i edit mode
-    
-    isEditingPoly = true;
+function showEditControls(poly) {
     editPolyTarget = poly;
-    setStatus("Redigering: Dra røde punkter. <strong>Klikk på blå linjer</strong> for å legge til nye punkter. Trykk 'Velg' for å lagre.");
-
-    // Skjul originalen
-    poly.visible = false;
-    poly.evented = false;
-    canvas.discardActiveObject();
+    // Ikke skjul polygonet, vi tegner oppå det
     
-    // Beregn absolutte koordinater
+    // Beregn absolutte koordinater for punktene
     const matrix = poly.calcTransformMatrix();
     const points = poly.points.map(p => fabric.util.transformPoint({ x: p.x, y: p.y }, matrix));
     
-    rebuildEditControls(points);
+    rebuildControls(points);
+
+    // Lytt til flytting av selve polygonet for å flytte kontrollene med
+    poly.on('moving', function() {
+        const newMatrix = poly.calcTransformMatrix();
+        const newPoints = poly.points.map(p => fabric.util.transformPoint({ x: p.x, y: p.y }, newMatrix));
+        updateControlPositions(newPoints);
+    });
+}
+
+function clearEditControls() {
+    editControlsGroup.forEach(obj => canvas.remove(obj));
+    editControlsGroup = [];
+    if (editPolyTarget) {
+        editPolyTarget.off('moving'); // Stopp å lytte
+        editPolyTarget = null;
+    }
     canvas.requestRenderAll();
 }
 
-function rebuildEditControls(points) {
-    // Rydd opp gamle kontroller
-    editPolyControls.forEach(c => canvas.remove(c));
-    editPolyLines.forEach(l => canvas.remove(l));
-    editPolyControls = [];
-    editPolyLines = [];
+function rebuildControls(points) {
+    // Fjern gamle
+    editControlsGroup.forEach(obj => canvas.remove(obj));
+    editControlsGroup = [];
 
-    // 1. Tegn linjer mellom punktene (Blå, tykke for å være lette å klikke på)
+    // Tegn linjer
     for (let i = 0; i < points.length; i++) {
         const p1 = points[i];
         const p2 = points[(i + 1) % points.length];
         
         const line = new fabric.Line([p1.x, p1.y, p2.x, p2.y], {
-            stroke: '#00aaff',
-            strokeWidth: 4, // Tykkere for å være lettere å treffe
-            selectable: false,
-            hoverCursor: 'copy', // Viser at man kan legge til noe
-            dataP1Index: i // Husker hvilken indeks dette er
+            stroke: '#00aaff', strokeWidth: 2,
+            selectable: false, hoverCursor: 'copy',
+            isControlLine: true,
+            dataIndex: i // Indeks for punktet før linjen
         });
         
-        // Klikk på linje legger til punkt
         line.on('mousedown', function(opt) {
-            if (opt.e.button !== 0) return; // Kun venstreklikk
-            addPolyPointAtLine(this, opt.e);
+            if(opt.e.button === 0) addPoint(this, opt.e);
         });
 
-        editPolyLines.push(line);
+        editControlsGroup.push(line);
         canvas.add(line);
     }
 
-    // 2. Tegn punkter (Røde sirkler)
+    // Tegn noder
     points.forEach((p, index) => {
         const circle = new fabric.Circle({
-            left: p.x, top: p.y,
-            radius: 6,
-            fill: 'rgba(255,0,0,0.9)',
-            stroke: 'white', strokeWidth: 1,
+            left: p.x, top: p.y, radius: 6,
+            fill: 'red', stroke: 'white', strokeWidth: 1,
             originX: 'center', originY: 'center',
             hasControls: false, hasBorders: false,
+            isControlPoint: true,
             dataIndex: index
         });
 
-        // Når punkt flyttes -> oppdater linjene
-        circle.on('moving', updateEditLinesFromCircles);
+        circle.on('moving', function(opt) {
+            movePoint(this);
+        });
 
-        editPolyControls.push(circle);
+        editControlsGroup.push(circle);
         canvas.add(circle);
     });
+    
+    updateControlSizes(); // Juster for zoom
 }
 
-function updateEditLinesFromCircles() {
-    const points = editPolyControls.map(c => ({ x: c.left, y: c.top }));
+function updateControlPositions(points) {
+    // Oppdaterer bare posisjonen til kontrollene (når polygon flyttes)
+    // Vi antar at rekkefølgen i editControlsGroup er: linjer først, så sirkler
+    const numPoints = points.length;
     
-    for (let i = 0; i < points.length; i++) {
+    // Oppdater linjer
+    for (let i = 0; i < numPoints; i++) {
         const p1 = points[i];
-        const p2 = points[(i + 1) % points.length];
-        const line = editPolyLines[i];
+        const p2 = points[(i + 1) % numPoints];
+        const line = editControlsGroup[i]; // De første N objektene er linjer
         line.set({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+    }
+
+    // Oppdater sirkler
+    for (let i = 0; i < numPoints; i++) {
+        const p = points[i];
+        const circle = editControlsGroup[numPoints + i]; // De neste N er sirkler
+        circle.set({ left: p.x, top: p.y });
+        circle.setCoords();
     }
 }
 
-function addPolyPointAtLine(lineObj, evt) {
-    const pointer = canvas.getPointer(evt);
-    const newPoint = { x: pointer.x, y: pointer.y };
+function movePoint(circle) {
+    if (!editPolyTarget) return;
     
-    // Hent eksisterende punkter
-    const currentPoints = editPolyControls.map(c => ({ x: c.left, y: c.top }));
+    const index = circle.dataIndex;
+    const p = { x: circle.left, y: circle.top };
     
-    // Sett inn nytt punkt
-    const insertIndex = lineObj.dataP1Index + 1;
-    currentPoints.splice(insertIndex, 0, newPoint);
+    // Konverter tilbake til polygonets lokale koordinater
+    // Dette er litt tricky i Fabric. Enklere løsning:
+    // Vi oppdaterer polygonets points array direkte, men vi må ta hensyn til polygonets transformasjon.
+    // ELLER: Vi rekonstruerer polygonet fra de absolutte punktene (enklest og mest robust).
     
-    // Tegn opp på nytt
-    rebuildEditControls(currentPoints);
-    canvas.requestRenderAll();
-}
-
-function finishPolyEdit() {
-    if (!isEditingPoly || !editPolyTarget) return;
+    // 1. Hent alle absolutte punkter fra sirklene
+    const numPoints = editPolyTarget.points.length;
+    const circles = editControlsGroup.slice(numPoints); // Hent sirklene
+    const absolutePoints = circles.map(c => ({ x: c.left, y: c.top }));
     
-    // Hent endelige punkter
-    const finalPoints = editPolyControls.map(c => ({ x: c.left, y: c.top }));
-    
-    // Rydd opp
-    editPolyControls.forEach(c => canvas.remove(c));
-    editPolyLines.forEach(l => canvas.remove(l));
-    editPolyControls = [];
-    editPolyLines = [];
-
-    // Lag ny polygon
-    const newPoly = new fabric.Polygon(finalPoints, {
+    // 2. Oppdater polygonet
+    // Vi må lage et nytt polygon for å unngå offset-rot
+    const props = {
         stroke: editPolyTarget.stroke,
         strokeWidth: editPolyTarget.strokeWidth,
         fill: editPolyTarget.fill,
         objectCaching: false
-    });
-
-    // Erstatt gammel med ny
+    };
+    
+    const newPoly = new fabric.Polygon(absolutePoints, props);
+    
+    // Bytt ut
     canvas.remove(editPolyTarget);
+    editPolyTarget = newPoly;
     canvas.add(newPoly);
     canvas.setActiveObject(newPoly);
     
-    isEditingPoly = false;
-    editPolyTarget = null;
+    // Oppdater linjene mellom punktene
+    updateControlPositions(absolutePoints);
     
-    // Gå til select mode
-    setMode('select');
-    canvas.requestRenderAll();
+    // Gjenopprett lytter for flytting av hele figuren
+    newPoly.on('moving', function() {
+        const newMatrix = newPoly.calcTransformMatrix();
+        const newPoints = newPoly.points.map(pt => fabric.util.transformPoint({ x: pt.x, y: pt.y }, newMatrix));
+        updateControlPositions(newPoints);
+    });
+}
+
+function addPoint(lineObj, evt) {
+    const pointer = canvas.getPointer(evt);
+    const index = lineObj.dataIndex; // Indeks til punktet FØR linjen
+    
+    // Hent nåværende punkter
+    const numPoints = editPolyTarget.points.length;
+    const circles = editControlsGroup.slice(numPoints);
+    const currentPoints = circles.map(c => ({ x: c.left, y: c.top }));
+    
+    // Sett inn nytt punkt
+    currentPoints.splice(index + 1, 0, { x: pointer.x, y: pointer.y });
+    
+    // Lag nytt polygon
+    const props = {
+        stroke: editPolyTarget.stroke,
+        strokeWidth: editPolyTarget.strokeWidth,
+        fill: editPolyTarget.fill,
+        objectCaching: false
+    };
+    
+    const newPoly = new fabric.Polygon(currentPoints, props);
+    
+    canvas.remove(editPolyTarget);
+    editPolyTarget = newPoly;
+    canvas.add(newPoly);
+    canvas.setActiveObject(newPoly);
+    
+    // Bygg kontroller på nytt (siden vi har fler punkter nå)
+    rebuildControls(currentPoints);
+    
+    // Lytter
+    newPoly.on('moving', function() {
+        const newMatrix = newPoly.calcTransformMatrix();
+        const newPoints = newPoly.points.map(pt => fabric.util.transformPoint({ x: pt.x, y: pt.y }, newMatrix));
+        updateControlPositions(newPoints);
+    });
 }
 
 // === KONTEKST MENY ===
@@ -538,7 +621,6 @@ function showContextMenu(e, target) {
     menu.style.display = 'block';
     menu.style.left = e.clientX + 'px';
     menu.style.top = e.clientY + 'px';
-    document.getElementById('ctx-edit-poly').style.display = (target.type === 'polygon') ? 'block' : 'none';
 }
 
 function hideContextMenu() {
@@ -551,7 +633,10 @@ window.onclick = (e) => {
 
 document.getElementById('ctx-delete').onclick = () => {
     const active = canvas.getActiveObject();
-    if (active) canvas.remove(active);
+    if (active) {
+        canvas.remove(active);
+        clearEditControls();
+    }
     hideContextMenu();
 };
 
@@ -586,25 +671,18 @@ document.getElementById('ctx-bring-front').onclick = () => {
     hideContextMenu();
 };
 
-document.getElementById('ctx-edit-poly').onclick = () => {
-    const active = canvas.getActiveObject();
-    if (active && active.type === 'polygon') startPolyEdit(active);
-    hideContextMenu();
-};
-
 // === DIVERSE ===
 
 window.addEventListener('keydown', function(e) {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditingPoly) {
+    if ((e.key === 'Delete' || e.key === 'Backspace')) {
         const active = canvas.getActiveObjects();
         if (active.length) {
             canvas.discardActiveObject();
             active.forEach(o => canvas.remove(o));
+            clearEditControls();
         }
     }
     if (e.key === 'Escape') {
-        if (isEditingPoly) finishPolyEdit();
-        else if (currentMode === 'polygon') abortPolygonDrawing();
         setMode('select');
     }
 });
@@ -632,6 +710,7 @@ window.addEventListener('paste', function(e) {
 });
 
 ui.btns.save.onclick = function() {
+    clearEditControls(); // Skjul kontroller før lagring
     const originalVpt = canvas.viewportTransform;
     const originalWidth = canvas.width;
     const originalHeight = canvas.height;
@@ -656,23 +735,35 @@ ui.btns.save.onclick = function() {
 ui.btns.clear.onclick = () => {
     if (confirm("Slett alt?")) {
         canvas.clear();
+        clearEditControls();
         setStatus("Tømt.");
     }
 };
 
 ui.btns.del.onclick = () => {
     const active = canvas.getActiveObject();
-    if(active) canvas.remove(active);
+    if(active) {
+        canvas.remove(active);
+        clearEditControls();
+    }
 };
 
 // Live oppdatering
 function updateProps() {
     const active = canvas.getActiveObject();
-    if (!active || isEditingPoly) return;
-    active.set('stroke', ui.inputs.strokeColor.value);
-    active.set('strokeWidth', parseInt(ui.inputs.strokeWidth.value));
-    if (active.type !== 'line' && active.type !== 'group') {
+    if (!active) return;
+    
+    // Hvis vi redigerer en polygon, oppdater både den og den midlertidige editTarget
+    if (active === editPolyTarget) {
+        active.set('stroke', ui.inputs.strokeColor.value);
+        active.set('strokeWidth', parseInt(ui.inputs.strokeWidth.value));
         active.set('fill', getCurrentFill());
+    } else {
+        active.set('stroke', ui.inputs.strokeColor.value);
+        active.set('strokeWidth', parseInt(ui.inputs.strokeWidth.value));
+        if (active.type !== 'line' && active.type !== 'group') {
+            active.set('fill', getCurrentFill());
+        }
     }
     canvas.requestRenderAll();
 }
@@ -681,4 +772,4 @@ ui.inputs.strokeColor.oninput = updateProps;
 ui.inputs.strokeWidth.oninput = updateProps;
 ui.inputs.fillColor.oninput = updateProps;
 Object.values(ui.radios).forEach(r => r.onchange = updateProps);
-/* Version: #17 */
+/* Version: #19 */
