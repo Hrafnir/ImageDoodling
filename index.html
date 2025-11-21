@@ -1,10 +1,10 @@
-<!-- Version: #8 -->
+<!-- Version: #11 -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TegneApp med Skravering</title>
+    <title>TegneApp Avansert</title>
     <link rel="stylesheet" href="style.css">
     <!-- Laster inn Fabric.js biblioteket -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -22,7 +22,7 @@
                 <button id="btn-line" class="tool-btn" title="Rett strek">Strek</button>
                 <button id="btn-arrow" class="tool-btn" title="Pil">Pil</button>
                 <button id="btn-rect" class="tool-btn" title="Firkant">Firkant</button>
-                <button id="btn-poly" class="tool-btn" title="Mangekant (Klikk punkter, dobbelklikk for å avslutte)">Mangekant</button>
+                <button id="btn-poly" class="tool-btn" title="Mangekant">Mangekant</button>
             </div>
 
             <!-- Egenskaper for strek -->
@@ -51,7 +51,8 @@
 
             <!-- Handlinger -->
             <div class="tool-section action-section">
-                <button id="btn-delete" title="Slett valgt objekt (Delete-tast)">Slett</button>
+                <button id="btn-reset-zoom" title="Tilbakestill visning (100%)">100%</button>
+                <button id="btn-delete" title="Slett valgt objekt">Slett</button>
                 <button id="btn-clear" title="Fjern alt">Nullstill</button>
                 <button id="btn-save" class="primary-action">Lagre PNG</button>
             </div>
@@ -59,7 +60,11 @@
 
         <!-- Informasjonstekst -->
         <div class="status-bar">
-            <span id="status-text">Klikk på det rutete feltet og trykk <strong>CTRL+V</strong> for å lime inn bilde.</span>
+            <span id="status-text">
+                <strong>Zoom:</strong> Scroll med musen. 
+                <strong>Panorer:</strong> Hold ALT + Dra. 
+                <strong>Høyreklikk</strong> på objekter for meny.
+            </span>
         </div>
 
         <!-- Canvas Container -->
@@ -68,7 +73,19 @@
         </div>
     </div>
 
+    <!-- Custom Context Menu (Høyreklikk-meny) -->
+    <div id="context-menu" class="context-menu">
+        <ul>
+            <li id="ctx-delete">Slett figur</li>
+            <li id="ctx-toggle-fill">Toggle Fyll/Transparent</li>
+            <li id="ctx-toggle-hatch">Toggle Skravering</li>
+            <li id="ctx-edit-poly" class="separator-top" style="display:none;">Rediger Punkter</li>
+            <li id="ctx-send-back" class="separator-top">Send bakerst</li>
+            <li id="ctx-bring-front">Send fremst</li>
+        </ul>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-<!-- Version: #8 -->
+<!-- Version: #11 -->
