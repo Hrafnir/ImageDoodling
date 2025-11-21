@@ -1,4 +1,4 @@
-/* Version: #12 */
+/* Version: #15 */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #e0e0e0;
@@ -98,14 +98,15 @@ input[type="number"] {
     border-radius: 3px;
 }
 
-.checkbox-group {
+/* Radio Group (Ny for v15) */
+.radio-group {
     display: flex;
     flex-direction: column;
     gap: 2px;
     font-size: 12px;
 }
 
-.checkbox-group label {
+.radio-group label {
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -129,9 +130,7 @@ input[type="number"] {
     flex-grow: 1;
     background-color: #ffffff;
     position: relative;
-    
-    /* Endret til hidden fordi vi bruker custom zoom/pan */
-    overflow: hidden; 
+    overflow: hidden; /* Skjuler scrollbars, vi bruker custom pan/zoom */
     
     background-image: 
         linear-gradient(45deg, #cccccc 25%, transparent 25%), 
@@ -146,7 +145,7 @@ input[type="number"] {
     justify-content: center;
 }
 
-/* --- Høyreklikk Meny (Context Menu) --- */
+/* --- Context Menu --- */
 .context-menu {
     display: none;
     position: absolute;
@@ -177,11 +176,9 @@ input[type="number"] {
     color: #000;
 }
 
-/* Separator linje i menyen */
 .context-menu li.separator-top {
     border-top: 1px solid #eee;
     margin-top: 2px;
     padding-top: 8px;
 }
-
-/* Version: #12 */
+/* Version: #15 */
