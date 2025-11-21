@@ -1,4 +1,4 @@
-/* Version: #15 */
+/* Version: #18 */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #e0e0e0;
@@ -53,16 +53,19 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: all 0.2s;
 }
 
 button:hover { background-color: #eeeeee; }
-button:active { transform: translateY(1px); }
 
+/* Aktiv knapp - Tydeligere farge */
 button.active {
-    background-color: #007bff;
-    color: white;
-    border-color: #0056b3;
+    background-color: #0056b3 !important; /* Mørkere blå */
+    color: white !important;
+    border-color: #004494 !important;
+    font-weight: bold;
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .primary-action {
@@ -98,7 +101,6 @@ input[type="number"] {
     border-radius: 3px;
 }
 
-/* Radio Group (Ny for v15) */
 .radio-group {
     display: flex;
     flex-direction: column;
@@ -130,7 +132,7 @@ input[type="number"] {
     flex-grow: 1;
     background-color: #ffffff;
     position: relative;
-    overflow: hidden; /* Skjuler scrollbars, vi bruker custom pan/zoom */
+    overflow: hidden;
     
     background-image: 
         linear-gradient(45deg, #cccccc 25%, transparent 25%), 
@@ -145,7 +147,7 @@ input[type="number"] {
     justify-content: center;
 }
 
-/* --- Context Menu --- */
+/* Ingen Context Menu lenger nødvendig for redigering, men beholder for sletting/rekkefølge */
 .context-menu {
     display: none;
     position: absolute;
@@ -158,27 +160,8 @@ input[type="number"] {
     font-size: 14px;
 }
 
-.context-menu ul {
-    list-style: none;
-    padding: 5px 0;
-    margin: 0;
-}
-
-.context-menu li {
-    padding: 8px 15px;
-    cursor: pointer;
-    color: #333;
-    transition: background-color 0.1s;
-}
-
-.context-menu li:hover {
-    background-color: #f0f0f0;
-    color: #000;
-}
-
-.context-menu li.separator-top {
-    border-top: 1px solid #eee;
-    margin-top: 2px;
-    padding-top: 8px;
-}
-/* Version: #15 */
+.context-menu ul { list-style: none; padding: 5px 0; margin: 0; }
+.context-menu li { padding: 8px 15px; cursor: pointer; color: #333; }
+.context-menu li:hover { background-color: #f0f0f0; }
+.context-menu li.separator-top { border-top: 1px solid #eee; margin-top: 2px; padding-top: 8px; }
+/* Version: #18 */
