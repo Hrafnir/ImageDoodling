@@ -1,10 +1,10 @@
-<!-- Version: #11 -->
+<!-- Version: #14 -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TegneApp Avansert</title>
+    <title>TegneApp Pro</title>
     <link rel="stylesheet" href="style.css">
     <!-- Laster inn Fabric.js biblioteket -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
@@ -33,7 +33,8 @@
                 </div>
                 <div class="input-group">
                     <label for="strokeWidth">Tykkelse:</label>
-                    <input type="number" id="strokeWidth" value="3" min="1" max="50">
+                    <!-- Satt standard til 5 -->
+                    <input type="number" id="strokeWidth" value="5" min="1" max="50">
                 </div>
             </div>
 
@@ -43,9 +44,11 @@
                     <label for="fillColor">Fyll:</label>
                     <input type="color" id="fillColor" value="#00ff00">
                 </div>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" id="useHatch"> Skravering</label>
-                    <label><input type="checkbox" id="transparentFill" checked> Ingen fyll</label>
+                <!-- Ny Radio-meny for fylltype -->
+                <div class="radio-group">
+                    <label><input type="radio" name="fillType" id="fill-none" checked> Ingen</label>
+                    <label><input type="radio" name="fillType" id="fill-solid"> Solid</label>
+                    <label><input type="radio" name="fillType" id="fill-hatch"> Skravering</label>
                 </div>
             </div>
 
@@ -63,7 +66,7 @@
             <span id="status-text">
                 <strong>Zoom:</strong> Scroll med musen. 
                 <strong>Panorer:</strong> Hold ALT + Dra. 
-                <strong>Høyreklikk</strong> på objekter for meny.
+                <strong>Mangekant:</strong> Klikk på startpunktet igjen for å lukke formen.
             </span>
         </div>
 
@@ -77,8 +80,8 @@
     <div id="context-menu" class="context-menu">
         <ul>
             <li id="ctx-delete">Slett figur</li>
-            <li id="ctx-toggle-fill">Toggle Fyll/Transparent</li>
-            <li id="ctx-toggle-hatch">Toggle Skravering</li>
+            <li id="ctx-toggle-fill">Toggle Fyll (På/Av)</li>
+            <li id="ctx-toggle-hatch">Bytt til Skravering</li>
             <li id="ctx-edit-poly" class="separator-top" style="display:none;">Rediger Punkter</li>
             <li id="ctx-send-back" class="separator-top">Send bakerst</li>
             <li id="ctx-bring-front">Send fremst</li>
@@ -88,4 +91,4 @@
     <script src="script.js"></script>
 </body>
 </html>
-<!-- Version: #11 -->
+<!-- Version: #14 -->
